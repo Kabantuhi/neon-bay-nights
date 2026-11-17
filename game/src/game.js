@@ -554,6 +554,8 @@ export function createGame(scene, rng, audio, hud) {
     state.camPitch = Math.max(0.08, Math.min(1.1, state.camPitch + drag.y * 0.004));
 
     const move = input.move();
+
+    if (actions & ACTION_ENTER) {
       if (state.driving) exitCar();
       else {
         const car = nearestCar(4);
