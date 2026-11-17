@@ -45,6 +45,7 @@ function runShot(name) {
   } else {
     hud.hideAllScreens();
   }
+  renderer.snapTo(state);
   let painted = 0;
   function paint() {
     renderer.render(state, STEP, lamps);

@@ -53,6 +53,7 @@ export function stageShot(name, game) {
   if (name === 'drive') {
     game.startMission(1);
     game.stageEnterCar();
+    game.stageAlignCarToRoad();
     game.state.hour = 10;
     runSteps(game, autopilotInput(game), 3.5);
     return { screen: 'play' };
@@ -60,6 +61,7 @@ export function stageShot(name, game) {
   if (name === 'police') {
     game.startMission(1);
     game.stageEnterCar();
+    game.stageAlignCarToRoad();
     game.stageSetWanted(3);
     game.state.hour = 19.5;
     runSteps(game, autopilotInput(game), 4);
@@ -68,6 +70,8 @@ export function stageShot(name, game) {
   if (name === 'mission') {
     game.startMission(3);
     game.stageTeleport(58, 14);
+    // Face the market square (and the beacon over it) so the shot shows the objective.
+    game.state.camYaw = Math.atan2(66 - 58, 22 - 14);
     game.state.player.hasPistol = true;
     game.state.hour = 16;
     const idle = {

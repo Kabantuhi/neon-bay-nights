@@ -3,7 +3,7 @@
 // clock. The renderer paints this state; this file decides what happens in it.
 import * as THREE from 'three';
 import { CAR, CITY_HALF, DAY_LENGTH, PEDESTRIANS, PLAYER, START_HOUR, TRAFFIC_CARS, WANTED } from './config.js';
-import { buildCity, collideCircle } from './city.js';
+import { buildCity, collideCircle, nearestRoadPoint } from './city.js';
 import { drivePlayerCar, makeCar, spawnParkedCars, spawnPoliceCar, spawnTraffic, updatePoliceCar, updateTraffic } from './vehicles.js';
 import { makePedestrian, makePoliceOfficer, spawnPedestrians, updatePedestrian, updatePoliceOfficer } from './people.js';
 import { getMission, missionCount, missionTarget, storyCompleteText } from './missions.js';
@@ -873,6 +873,23 @@ export function createGame(scene, rng, audio, hud) {
     state.player.z = z;
     playerGroup.position.set(x, 0, z);
   }
+  // Put the player's car on the centre of the nearest road, heading along it, so a
+  // staged drive starts cleanly instead of scraping a building corner.
+  function stageAlignCarToRoad() {
+    const car = state.playerCar;
+    if (!car) return;
+    const near = nearestRoadPoint(car.x, car.z);
+    const alongZ = Math.abs(near.x - car.x) < Math.abs(near.z - car.z);
+    car.x = near.x;
+    car.z = near.z;
+    car.heading = alongZ ? 0 : Math.PI / 2;
+    car.speed = 0;
+    car.mesh.position.set(car.x, 0, car.z);
+    car.mesh.rotation.y = car.heading;
+    state.player.x = car.x;
+    state.player.z = car.z;
+    state.player.heading = car.heading;
+  }
 
   return {
     state,
@@ -893,5 +910,6 @@ export function createGame(scene, rng, audio, hud) {
     stageEnterCar,
     stageSetWanted,
     stageTeleport,
+    stageAlignCarToRoad,
   };
 }

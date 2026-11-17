@@ -123,6 +123,23 @@ export function createRenderer(canvas) {
     scene,
     camera,
     renderer,
+    // Place the camera exactly where it belongs right now (used by screenshot staging,
+    // where only a few frames are painted and the easing would never catch up).
+    snapTo(state) {
+      const p = state.player;
+      const driving = state.driving && state.playerCar;
+      const dist = driving ? 13 : 8.5;
+      const height = driving ? 5.2 : 4.2;
+      const yaw = driving ? state.playerCar.heading : state.camYaw;
+      const forwardX = Math.sin(yaw);
+      const forwardZ = Math.cos(yaw);
+      camX = p.x - forwardX * dist;
+      camZ = p.z - forwardZ * dist;
+      camY = p.y + height;
+      lookX = p.x + forwardX * 6;
+      lookY = p.y + 1.6;
+      lookZ = p.z + forwardZ * 6;
+    },
     render(state, dt, lamps) {
       updateCamera(state, dt);
       updateDayNight(state, lamps);
