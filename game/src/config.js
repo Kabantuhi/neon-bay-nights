@@ -1,61 +1,59 @@
-// Every tuning number and colour in one place. The playfield is a fixed 1280x720 logical area;
-// the renderer scales it to the window, so no rule below depends on the screen size.
+// Neon Bay — configuration for "Neon Bay Nights", an original open-world crime game.
+// Every number that tunes the city, the cars, the police and the missions lives here so the
+// rest of the game can stay readable. Nothing here comes from any commercial game.
+export const GAME_TITLE = 'Neon Bay Nights';
+export const CITY_NAME = 'Neon Bay';
 
-export const FIELD = { width: 1280, height: 720, groundY: 664 };
+// The city is a grid of blocks. Roads run between blocks; block centres sit on a lattice.
+export const BLOCK = 44; // distance between block centres, in metres
+export const BLOCKS = 5; // blocks per side (5 x 5 = 25 blocks)
+export const ROAD_WIDTH = 12;
+export const CITY_HALF = (BLOCKS * BLOCK) / 2; // 110
+export const WORLD_SIZE = CITY_HALF * 2 + 80;
 
-/** The simulation's fixed step, in seconds: 60 updates a second whatever the display's rate. */
-export const STEP = 1 / 60;
-
+// Player on foot.
 export const PLAYER = {
-  width: 72,
-  height: 24,
-  speed: 560,
-  invulnerable: 1.5,
+  walkSpeed: 7,
+  runSpeed: 11,
+  health: 100,
+  punchDamage: 25,
+  punchRange: 2.2,
+  pistolDamage: 34,
+  pistolRange: 90,
+  magazine: 12,
+  startMoney: 150,
 };
 
-export const LIVES = 3;
-
-export const BLOCK = {
-  minWidth: 40,
-  maxWidth: 110,
-  height: 36,
-  speed: 240,
-  speedPerLevel: 30,
-  speedJitter: 90,
-  interval: 0.55,
-  intervalScale: 0.88,
-  minInterval: 0.14,
-  dodgePoints: 1,
+// Cars.
+export const CAR = {
+  accel: 22,
+  brake: 34,
+  reverseAccel: 12,
+  maxSpeed: 38,
+  maxReverse: 10,
+  turnRate: 1.9,
+  drag: 0.35,
 };
 
-export const COIN = {
-  size: 24,
-  speed: 190,
-  speedPerLevel: 14,
-  interval: 1.4,
-  intervalJitter: 0.8,
-  points: 10,
+// Wanted level and police.
+export const WANTED = {
+  maxStars: 5,
+  decayDelay: 14, // seconds without a crime before stars start falling
+  decayStep: 9, // seconds per star lost while hidden
+  bustRange: 2.6,
+  bustTime: 2.2, // seconds a cop must stay close on foot to bust the player
 };
 
-/** Seconds of play per level, and the last level: speeds and spawn rates stop growing there. */
-export const LEVEL = { seconds: 12, max: 12 };
+// Day / night.
+export const DAY_LENGTH = 240; // seconds for a full day
+export const START_HOUR = 17.5; // golden hour at the start screen
 
-/** How many falling things can exist at once; the pool is allocated once, at boot. */
-export const POOL_SIZE = 64;
+// Traffic and pedestrians.
+export const TRAFFIC_CARS = 14;
+export const PEDESTRIANS = 26;
 
-export const PALETTE = {
-  backdrop: '#11141b',
-  sky: '#1b1f2a',
-  ground: '#2a3040',
-  player: '#4fc3f7',
-  block: '#e5534b',
-  coin: '#f2c94c',
-  panel: '#252b38',
-  text: '#eef1f5',
-  muted: '#8b93a3',
-};
+// Missions pay out in dollars; the story is original fiction about Neon Bay.
+export const MISSION_REWARDS = [400, 650, 900, 1200, 1800, 3000];
 
-export const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
-
-/** Where the best score is kept between visits (this browser only). */
-export const BEST_KEY = 'block-dodger.best';
+export const SAVE_KEY = 'neon-bay-nights-save-v1';
+export const STEP = 1 / 60;

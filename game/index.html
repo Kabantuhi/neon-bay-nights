@@ -3,17 +3,121 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Block Dodger</title>
+<title>Neon Bay Nights — an open-world crime game</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #11141b; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1026; font-family: 'Segoe UI', Arial, sans-serif; color: #fff; }
   #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
-  /* Read aloud, never shown: the status line screen readers announce. */
   #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .hidden { display: none !important; }
+
+  /* ---- HUD ---- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #top-left { position: absolute; top: 14px; left: 16px; }
+  #stars { font-size: 30px; letter-spacing: 4px; color: #5a6270; text-shadow: 0 2px 6px rgba(0,0,0,.7); }
+  #stars.hot { color: #ffd700; }
+  #health-row { margin-top: 6px; display: flex; align-items: center; gap: 8px; }
+  #health-bar { width: 190px; height: 14px; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.5); border-radius: 7px; overflow: hidden; }
+  #health-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #2ecc71, #7cff00); transition: width .2s; }
+  #health-fill.low { background: linear-gradient(90deg, #e74c3c, #ff6a00); }
+  #health-text { font-weight: bold; font-size: 14px; text-shadow: 0 1px 3px #000; }
+  #top-right { position: absolute; top: 14px; right: 16px; text-align: right; }
+  #money { font-size: 26px; font-weight: bold; color: #7cff00; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  #clock { font-size: 20px; font-weight: bold; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
+  #objective { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; max-width: 46%; background: rgba(0,0,0,.5); padding: 8px 16px; border-radius: 8px; border-left: 4px solid #ffe600; }
+  #objective-text { font-size: 15px; font-weight: bold; }
+  #objective-dist { font-size: 13px; color: #ffe600; margin-top: 2px; }
+  #minimap { position: absolute; left: 16px; bottom: 16px; width: 190px; height: 190px; border: 2px solid rgba(255,255,255,.6); border-radius: 8px; background: #141a20; box-shadow: 0 4px 16px rgba(0,0,0,.6); }
+  #speed { position: absolute; right: 20px; bottom: 20px; text-align: right; text-shadow: 0 2px 6px #000; }
+  #speed-value { font-size: 44px; font-weight: bold; }
+  #speed-unit { font-size: 14px; color: #ddd; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 4px #000; }
+  #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair::after { left: 0; top: 10px; width: 22px; height: 2px; }
+  #dialogue { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); width: 640px; max-width: 80%; background: rgba(10,10,20,.82); border: 1px solid #ffe600; border-radius: 10px; padding: 14px 18px; font-size: 15px; line-height: 1.5; }
+  #toast { position: absolute; left: 50%; top: 110px; transform: translateX(-50%); background: rgba(0,0,0,.7); padding: 8px 18px; border-radius: 20px; font-size: 15px; font-weight: bold; white-space: nowrap; }
+  #controls-help { position: absolute; right: 16px; bottom: 120px; text-align: right; font-size: 12px; color: rgba(255,255,255,.75); text-shadow: 0 1px 3px #000; line-height: 1.6; }
+
+  /* ---- Full screens ---- */
+  .screen { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: linear-gradient(180deg, rgba(10,8,30,.55), rgba(10,8,30,.88)); }
+  .screen h1 { margin: 0; font-size: 64px; letter-spacing: 2px; color: #ffe600; text-shadow: 0 0 24px rgba(255,46,136,.8), 0 4px 0 #7a0050; }
+  .screen h1 .neon { color: #00e5ff; text-shadow: 0 0 24px rgba(0,229,255,.8); }
+  .screen h2 { margin: 6px 0 0; font-size: 20px; font-weight: normal; color: #ffd98a; }
+  .screen p { max-width: 620px; font-size: 16px; line-height: 1.6; color: #eee; }
+  .screen .keys { font-size: 14px; color: #ccc; line-height: 1.9; background: rgba(0,0,0,.4); padding: 12px 22px; border-radius: 10px; }
+  .screen .cta { margin-top: 18px; font-size: 18px; font-weight: bold; color: #fff; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+  #screen-dead h1, #screen-busted h1 { color: #ff4040; text-shadow: 0 0 24px rgba(255,0,0,.7); }
+  #screen-done h1 { color: #7cff00; text-shadow: 0 0 24px rgba(124,255,0,.7); }
 </style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
 </head>
 <body>
-<canvas id="game" aria-label="Block Dodger: move the paddle left and right to dodge falling blocks and catch coins"></canvas>
+<canvas id="game" aria-label="Neon Bay Nights: an open-world crime game. Drive, explore the city, take jobs and stay ahead of the police."></canvas>
 <p id="status" role="status" aria-live="polite"></p>
+
+<div id="hud" class="hidden">
+  <div id="top-left">
+    <div id="stars">☆☆☆☆☆</div>
+    <div id="health-row">
+      <div id="health-bar"><div id="health-fill"></div></div>
+      <span id="health-text">100</span>
+    </div>
+  </div>
+  <div id="top-right">
+    <div id="money">$150</div>
+    <div id="clock">17:30</div>
+  </div>
+  <div id="objective">
+    <div id="objective-text">Follow the yellow marker.</div>
+    <div id="objective-dist"></div>
+  </div>
+  <canvas id="minimap" width="190" height="190"></canvas>
+  <div id="speed" class="hidden"><span id="speed-value">0</span><br><span id="speed-unit">km/h</span></div>
+  <div id="crosshair" class="hidden"></div>
+  <div id="dialogue" class="hidden"><span id="dialogue-text"></span></div>
+  <div id="toast" class="hidden"></div>
+  <div id="controls-help">WASD move &nbsp;·&nbsp; Shift run &nbsp;·&nbsp; E enter / steal car<br>Click shoot &nbsp;·&nbsp; F punch &nbsp;·&nbsp; R reload &nbsp;·&nbsp; Space jump<br>M next job &nbsp;·&nbsp; S save &nbsp;·&nbsp; N sound &nbsp;·&nbsp; Esc pause</div>
+</div>
+
+<div id="screen-start" class="screen">
+  <h1>NEON <span class="neon">BAY</span> NIGHTS</h1>
+  <h2>An original open-world crime game — explore, drive, steal, survive.</h2>
+  <p>Raka the courier owes $5,000 to the harbour crew. Six jobs stand between him and freedom —
+  deliveries, a stolen car, a market full of goons, and the man who runs the whole bay.</p>
+  <p id="start-stats"></p>
+  <div class="keys">WASD — move &nbsp;·&nbsp; Mouse drag — camera &nbsp;·&nbsp; E — enter / steal a car<br>
+  Click — shoot &nbsp;·&nbsp; F — punch &nbsp;·&nbsp; R — reload &nbsp;·&nbsp; Space — jump<br>
+  M — next job &nbsp;·&nbsp; S — save &nbsp;·&nbsp; Esc — pause</div>
+  <div class="cta">Press ENTER or CLICK to start &nbsp;·&nbsp; C continues a saved game</div>
+</div>
+
+<div id="screen-pause" class="screen hidden">
+  <h1>PAUSED</h1>
+  <p>Neon Bay waits for no one — except right now.</p>
+  <div class="cta">Press ESC to keep playing</div>
+</div>
+
+<div id="screen-dead" class="screen hidden">
+  <h1 id="end-title">WASTED</h1>
+  <p id="end-body-dead"></p>
+  <div class="cta">Press ENTER to return to the title screen</div>
+</div>
+
+<div id="screen-busted" class="screen hidden">
+  <h1>BUSTED</h1>
+  <p id="end-body-busted"></p>
+  <div class="cta">Press ENTER to return to the title screen</div>
+</div>
+
+<div id="screen-done" class="screen hidden">
+  <h1>NEON BAY IS YOURS</h1>
+  <p id="end-body-done"></p>
+  <div class="cta">Press ENTER to return to the title screen</div>
+</div>
+
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>
