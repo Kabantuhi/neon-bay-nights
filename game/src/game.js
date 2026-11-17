@@ -873,22 +873,43 @@ export function createGame(scene, rng, audio, hud) {
     state.player.z = z;
     playerGroup.position.set(x, 0, z);
   }
-  // Put the player's car on the centre of the nearest road, heading along it, so a
-  // staged drive starts cleanly instead of scraping a building corner.
-  function stageAlignCarToRoad() {
+  // Pull the nearest police interceptor to a spot ahead of the player car, facing it, so
+  // a staged chase frame shows the police in the picture, not only on the minimap.
+  function stagePoliceAhead() {
+    if (state.policeCars.length === 0 || !state.playerCar) return;
+    const car = state.playerCar;
+    let best = state.policeCars[0];
+    let bestDist = Infinity;
+    for (const pc of state.policeCars) {
+      const d = Math.hypot(pc.x - car.x, pc.z - car.z);
+      if (d < bestDist) {
+        bestDist = d;
+        best = pc;
+      }
+    }
+    const fx = Math.sin(car.heading);
+    const fz = Math.cos(car.heading);
+    // Directly ahead on the same lane, facing the player head-on.
+    best.x = car.x + fx * 22;
+    best.z = car.z + fz * 22;
+    best.heading = Math.atan2(car.x - best.x, car.z - best.z);
+    best.speed = 12;
+    best.mesh.position.set(best.x, 0, best.z);
+    best.mesh.rotation.y = best.heading;
+  }
+  // Place the player's car at a chosen road spot, heading along the road.
+  function stagePlaceCar(x, z, heading) {
     const car = state.playerCar;
     if (!car) return;
-    const near = nearestRoadPoint(car.x, car.z);
-    const alongZ = Math.abs(near.x - car.x) < Math.abs(near.z - car.z);
-    car.x = near.x;
-    car.z = near.z;
-    car.heading = alongZ ? 0 : Math.PI / 2;
+    car.x = x;
+    car.z = z;
+    car.heading = heading;
     car.speed = 0;
-    car.mesh.position.set(car.x, 0, car.z);
-    car.mesh.rotation.y = car.heading;
-    state.player.x = car.x;
-    state.player.z = car.z;
-    state.player.heading = car.heading;
+    car.mesh.position.set(x, 0, z);
+    car.mesh.rotation.y = heading;
+    state.player.x = x;
+    state.player.z = z;
+    state.player.heading = heading;
   }
 
   return {
@@ -910,6 +931,7 @@ export function createGame(scene, rng, audio, hud) {
     stageEnterCar,
     stageSetWanted,
     stageTeleport,
-    stageAlignCarToRoad,
+    stagePlaceCar,
+    stagePoliceAhead,
   };
 }

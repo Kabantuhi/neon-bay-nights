@@ -31,6 +31,8 @@ const renderer = createRenderer(canvas);
 const game = createGame(renderer.scene, rng, audio, hud);
 const state = game.state;
 const lamps = game.city.lamps;
+// A handle for play-testing and debugging in the console; the game itself never reads it.
+window.__game = game;
 
 function announce(message) {
   status.textContent = message;
@@ -60,6 +62,8 @@ function runGame() {
   const input = createInput(canvas);
   let screen = 'start';
   let saveData = loadGame();
+  let accumulator = 0;
+  let last = performance.now();
 
   function startNewGame() {
     game.reset();
@@ -122,12 +126,30 @@ function runGame() {
   function frame(now) {
     requestAnimationFrame(frame);
     const actions = handleActions();
-    if (screen !== 'play') return;
-    game.stepPlaying(STEP, input, actions);
-    // The game can end itself (wasted / busted / story done) inside a step.
-    if (state.dead || state.busted || state.storyDone) {
-      screen = state.screen;
+    if (screen !== 'play') {
+      last = now;
+      accumulator = 0;
+      return;
     }
+    // Fixed-step simulation: the world advances in 1/60 s steps no matter the display
+    // rate, so the game plays at the same speed on 60 Hz, 120 Hz and slow machines.
+    accumulator += Math.min((now - last) / 1000, MAX_FRAME);
+    last = now;
+    let guard = 0;
+    // Edge actions (enter, punch, reload) fire once per frame, not once per sub-step.
+    let stepActions = actions;
+    while (accumulator >= STEP && guard < 40) {
+      game.stepPlaying(STEP, input, stepActions);
+      stepActions = 0;
+      accumulator -= STEP;
+      guard += 1;
+      if (state.dead || state.busted || state.storyDone) {
+        screen = state.screen;
+        accumulator = 0;
+        break;
+      }
+    }
+    if (guard >= 40) accumulator = 0;
     renderer.render(state, STEP, lamps);
   }
 

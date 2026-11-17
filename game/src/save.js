@@ -9,7 +9,7 @@ export function saveGame(state) {
       health: state.player.health,
       missionIndex: state.missionIndex,
       missionsDone: state.missionsDone,
-      position: { x: state.player.position.x, z: state.player.position.z },
+      position: { x: state.player.x, z: state.player.z },
       hour: state.hour,
       ammo: state.player.ammo,
       reserveAmmo: state.player.reserveAmmo,

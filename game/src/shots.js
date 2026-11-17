@@ -7,7 +7,7 @@ import { STEP } from './config.js';
 const SAMPLE = 1 / 30;
 
 /** A fake input that drives forward and steers toward the mission target or the road. */
-function autopilotInput(game, steerTarget) {
+function autopilotInput() {
   return {
     move() {
       return { forward: 1, strafe: 0 };
@@ -33,6 +33,13 @@ function autopilotInput(game, steerTarget) {
   };
 }
 
+/** A fake input that coasts: foot off the pedal, so a chase can catch up. */
+function coastInput() {
+  const input = autopilotInput();
+  input.move = () => ({ forward: 0, strafe: 0 });
+  return input;
+}
+
 function runSteps(game, input, seconds) {
   const actions = 0;
   for (let t = 0; t < seconds; t += STEP) {
@@ -53,18 +60,22 @@ export function stageShot(name, game) {
   if (name === 'drive') {
     game.startMission(1);
     game.stageEnterCar();
-    game.stageAlignCarToRoad();
+    // Start on the central avenue heading north, so the drive stays downtown.
+    game.stagePlaceCar(0, -44, 0);
     game.state.hour = 10;
-    runSteps(game, autopilotInput(game), 3.5);
+    runSteps(game, autopilotInput(), 2.5);
     return { screen: 'play' };
   }
   if (name === 'police') {
     game.startMission(1);
     game.stageEnterCar();
-    game.stageAlignCarToRoad();
+    game.stagePlaceCar(0, -44, 0);
     game.stageSetWanted(3);
     game.state.hour = 19.5;
-    runSteps(game, autopilotInput(game), 4);
+    // Two seconds of driving, then coast: the interceptors catch up and close in.
+    runSteps(game, autopilotInput(), 2);
+    runSteps(game, coastInput(), 2.5);
+    game.stagePoliceAhead();
     return { screen: 'play' };
   }
   if (name === 'mission') {
